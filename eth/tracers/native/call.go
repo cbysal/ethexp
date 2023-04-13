@@ -102,8 +102,8 @@ type callTracer struct {
 	callstack []callFrame
 	config    callTracerConfig
 	gasLimit  uint64
-	interrupt atomic.Bool // Atomic flag to signal execution interruption
-	reason    error       // Textual reason for the interruption
+	interrupt uint32 // Atomic flag to signal execution interruption
+	reason    error  // Textual reason for the interruption
 }
 
 type callTracerConfig struct {
@@ -133,7 +133,7 @@ func (t *callTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Ad
 		From:  from,
 		To:    &toCopy,
 		Input: common.CopyBytes(input),
-		Gas:   t.gasLimit,
+		Gas:   gas,
 		Value: value,
 	}
 	if create {
@@ -148,10 +148,6 @@ func (t *callTracer) CaptureEnd(output []byte, gasUsed uint64, err error) {
 
 // CaptureState implements the EVMLogger interface to trace a single step of VM execution.
 func (t *callTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, scope *vm.ScopeContext, rData []byte, depth int, err error) {
-	// skip if the previous op caused an error
-	if err != nil {
-		return
-	}
 	// Only logs need to be captured via opcode processing
 	if !t.config.WithLog {
 		return
@@ -161,7 +157,7 @@ func (t *callTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 		return
 	}
 	// Skip if tracing was interrupted
-	if t.interrupt.Load() {
+	if atomic.LoadUint32(&t.interrupt) > 0 {
 		return
 	}
 	switch op {
@@ -180,12 +176,7 @@ func (t *callTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uint64, sco
 			topics[i] = common.Hash(topic.Bytes32())
 		}
 
-		data, err := tracers.GetMemoryCopyPadded(scope.Memory, int64(mStart.Uint64()), int64(mSize.Uint64()))
-		if err != nil {
-			// mSize was unrealistically large
-			return
-		}
-
+		data := scope.Memory.GetCopy(int64(mStart.Uint64()), int64(mSize.Uint64()))
 		log := callLog{Address: scope.Contract.Address(), Topics: topics, Data: hexutil.Bytes(data)}
 		t.callstack[len(t.callstack)-1].Logs = append(t.callstack[len(t.callstack)-1].Logs, log)
 	}
@@ -197,7 +188,7 @@ func (t *callTracer) CaptureEnter(typ vm.OpCode, from common.Address, to common.
 		return
 	}
 	// Skip if tracing was interrupted
-	if t.interrupt.Load() {
+	if atomic.LoadUint32(&t.interrupt) > 0 {
 		return
 	}
 
@@ -262,7 +253,7 @@ func (t *callTracer) GetResult() (json.RawMessage, error) {
 // Stop terminates execution of the tracer at the first opportune moment.
 func (t *callTracer) Stop(err error) {
 	t.reason = err
-	t.interrupt.Store(true)
+	atomic.StoreUint32(&t.interrupt, 1)
 }
 
 // clearFailedLogs clears the logs of a callframe and all its children

@@ -127,11 +127,7 @@ func newNode(typ nodetype, genesis *core.Genesis, enodes []*enode.Node) *ethNode
 
 	// Inject the signer key and start sealing with it
 	stack.AccountManager().AddBackend(keystore.NewPlaintextKeyStore("beacon-stress"))
-	ks := stack.AccountManager().Backends(keystore.KeyStoreType)
-	if len(ks) == 0 {
-		panic("Keystore is not available")
-	}
-	store := ks[0].(*keystore.KeyStore)
+	store := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
 	if _, err := store.NewAccount(""); err != nil {
 		panic(err)
 	}
