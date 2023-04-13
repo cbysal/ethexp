@@ -539,6 +539,8 @@ func (pool *TxPool) ContentFrom(addr common.Address) (types.Transactions, types.
 }
 
 func (pool *TxPool) TxHashes() mapset.Set[common.Hash] {
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
 	txHashes := mapset.NewSet[common.Hash]()
 	for _, pendingList := range pool.pending {
 		pendingTxs := pendingList.txs.Flatten()
