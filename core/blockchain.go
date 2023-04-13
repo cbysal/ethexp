@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -1349,12 +1348,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 			commonHashes++
 		}
 	}
-	file, err := os.OpenFile("txs.log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	fmt.Fprintln(file, block.NumberU64(), block.Transactions().Len(), commonHashes)
+	fmt.Println(block.NumberU64(), block.Transactions().Len(), commonHashes)
 	// Calculate the total difficulty of the block
 	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
 	if ptd == nil {
