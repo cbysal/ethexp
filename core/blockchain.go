@@ -1354,7 +1354,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		return err
 	}
 	defer file.Close()
-	fmt.Fprintln(file, block.Transactions().Len(), commonHashes)
+	fmt.Fprintln(file, block.NumberU64(), block.Transactions().Len(), commonHashes)
 	// Calculate the total difficulty of the block
 	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
 	if ptd == nil {
