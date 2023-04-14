@@ -17,9 +17,12 @@
 package eth
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
+	"os"
 	"sync"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/ethereum/go-ethereum/common"
@@ -194,6 +197,16 @@ func (p *Peer) SendTransactions(txs types.Transactions) error {
 	for _, tx := range txs {
 		p.knownTxs.Add(tx.Hash())
 	}
+	file, err := os.OpenFile("send.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+	if err != nil {
+		return err
+	}
+	name := p.Info().Name
+	for _, tx := range txs {
+		hash := tx.Hash()
+		fmt.Fprintf(file, "%d,%s,%s\n", time.Now().UnixNano(), name, hash.String())
+	}
+	file.Close()
 	return p2p.Send(p.rw, TransactionsMsg, txs)
 }
 

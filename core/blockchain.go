@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -1341,15 +1342,36 @@ func (bc *BlockChain) writeKnownBlock(block *types.Block) error {
 // writeBlockWithState writes block, metadata and corresponding state data to the
 // database.
 func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) error {
+	blockFile, err := os.OpenFile("block.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+	if err != nil {
+		return err
+	}
+	txsFile, err := os.OpenFile("txs.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+	if err != nil {
+		return err
+	}
 	txsInPool := bc.TxPool.TxHashes()
 	commonHashes := 0
+	fmt.Fprintf(blockFile, "%d", time.Now().UnixNano())
+	fmt.Fprintf(txsFile, "%d", time.Now().UnixNano())
 	for _, tx := range block.Transactions() {
 		hash := tx.Hash()
+		fmt.Fprintf(blockFile, ",%s", hash.String())
 		if txsInPool.Contains(hash) {
+			fmt.Fprintf(txsFile, ",%s", hash.String())
 			commonHashes++
 		}
 	}
-	fmt.Println(block.NumberU64(), block.Transactions().Len(), commonHashes)
+	fmt.Fprintf(blockFile, "\n")
+	fmt.Fprintf(txsFile, "\n")
+	blockFile.Close()
+	txsFile.Close()
+	total, err := os.OpenFile("total.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(total, "%d,%d,%d,%d\n", time.Now().UnixNano(), block.NumberU64(), block.Transactions().Len(), commonHashes)
+	total.Close()
 	// Calculate the total difficulty of the block
 	ptd := bc.GetTd(block.ParentHash(), block.NumberU64()-1)
 	if ptd == nil {
