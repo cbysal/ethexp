@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -197,16 +198,18 @@ func (p *Peer) SendTransactions(txs types.Transactions) error {
 	for _, tx := range txs {
 		p.knownTxs.Add(tx.Hash())
 	}
-	file, err := os.OpenFile("send.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
-	if err != nil {
-		return err
-	}
 	name := p.Info().Name
-	for _, tx := range txs {
-		hash := tx.Hash()
-		fmt.Fprintf(file, "%d,%s,%s\n", time.Now().UnixNano(), name, hash.String())
+	if strings.Contains(name, "node") {
+		file, err := os.OpenFile("send.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+		if err != nil {
+			return err
+		}
+		for _, tx := range txs {
+			hash := tx.Hash()
+			fmt.Fprintf(file, "%d,%s,%s\n", time.Now().UnixNano(), name, hash.String())
+		}
+		file.Close()
 	}
-	file.Close()
 	return p2p.Send(p.rw, TransactionsMsg, txs)
 }
 
@@ -232,6 +235,17 @@ func (p *Peer) AsyncSendTransactions(hashes []common.Hash) {
 func (p *Peer) sendPooledTransactionHashes66(hashes []common.Hash) error {
 	// Mark all the transactions as known, but ensure we don't overflow our limits
 	p.knownTxs.Add(hashes...)
+	name := p.Info().Name
+	if strings.Contains(name, "node") {
+		file, err := os.OpenFile("sendHash.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+		if err != nil {
+			return err
+		}
+		for _, hash := range hashes {
+			fmt.Fprintf(file, "%d,%s,%s\n", time.Now().UnixNano(), name, hash.String())
+		}
+		file.Close()
+	}
 	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket66(hashes))
 }
 
@@ -245,6 +259,17 @@ func (p *Peer) sendPooledTransactionHashes66(hashes []common.Hash) error {
 func (p *Peer) sendPooledTransactionHashes68(hashes []common.Hash, types []byte, sizes []uint32) error {
 	// Mark all the transactions as known, but ensure we don't overflow our limits
 	p.knownTxs.Add(hashes...)
+	name := p.Info().Name
+	if strings.Contains(name, "node") {
+		file, err := os.OpenFile("sendHash.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+		if err != nil {
+			return err
+		}
+		for _, hash := range hashes {
+			fmt.Fprintf(file, "%d,%s,%s\n", time.Now().UnixNano(), name, hash.String())
+		}
+		file.Close()
+	}
 	return p2p.Send(p.rw, NewPooledTransactionHashesMsg, NewPooledTransactionHashesPacket68{Types: types, Sizes: sizes, Hashes: hashes})
 }
 
