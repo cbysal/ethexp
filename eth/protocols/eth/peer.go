@@ -237,7 +237,7 @@ func (p *Peer) sendPooledTransactionHashes66(hashes []common.Hash) error {
 	p.knownTxs.Add(hashes...)
 	name := p.Info().Name
 	if strings.Contains(name, "node") {
-		file, err := os.OpenFile("sendHash.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+		file, err := os.OpenFile("send.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
 		if err != nil {
 			return err
 		}
@@ -261,7 +261,7 @@ func (p *Peer) sendPooledTransactionHashes68(hashes []common.Hash, types []byte,
 	p.knownTxs.Add(hashes...)
 	name := p.Info().Name
 	if strings.Contains(name, "node") {
-		file, err := os.OpenFile("sendHash.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
+		file, err := os.OpenFile("send.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
 		if err != nil {
 			return err
 		}
