@@ -446,8 +446,10 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, ethBa
 	}
 
 	go func() {
-		time.Sleep(5 * time.Second)
-		go ethBackend.TxPool().RecordTxs()
+		for {
+			time.Sleep(5 * time.Second)
+			go ethBackend.TxPool().RecordTxs()
+		}
 	}()
 }
 
