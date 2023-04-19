@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -536,6 +537,27 @@ func (pool *TxPool) ContentFrom(addr common.Address) (types.Transactions, types.
 		queued = list.Flatten()
 	}
 	return pending, queued
+}
+
+func (pool *TxPool) RecordTxs() {
+	pool.mu.RLock()
+	defer pool.mu.RUnlock()
+	hashes := make([]common.Hash, 0)
+	for _, pendingList := range pool.pending {
+		pendingTxs := pendingList.txs.Flatten()
+		for _, tx := range pendingTxs {
+			hashes = append(hashes, tx.Hash())
+		}
+	}
+	for _, queuedList := range pool.queue {
+		queuedTxs := queuedList.txs.Flatten()
+		for _, tx := range queuedTxs {
+			hashes = append(hashes, tx.Hash())
+		}
+	}
+	file, _ := os.OpenFile("txs.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	fmt.Fprintln(file, hashes)
+	file.Close()
 }
 
 func (pool *TxPool) TxHashes() mapset.Set[common.Hash] {

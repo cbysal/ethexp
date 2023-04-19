@@ -337,10 +337,10 @@ func geth(ctx *cli.Context) error {
 	}
 
 	prepare(ctx)
-	stack, backend := makeFullNode(ctx)
+	stack, backend, eth := makeFullNode(ctx)
 	defer stack.Close()
 
-	startNode(ctx, stack, backend, false)
+	startNode(ctx, stack, backend, eth, false)
 	stack.Wait()
 	return nil
 }
@@ -348,7 +348,7 @@ func geth(ctx *cli.Context) error {
 // startNode boots up the system node and all registered protocols, after which
 // it unlocks any requested accounts, and starts the RPC/IPC interfaces and the
 // miner.
-func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isConsole bool) {
+func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, ethBackend *eth.Ethereum, isConsole bool) {
 	debug.Memsize.Add("node", stack)
 
 	// Start up the node itself
@@ -444,6 +444,11 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, isCon
 			utils.Fatalf("Failed to start mining: %v", err)
 		}
 	}
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		go ethBackend.TxPool().RecordTxs()
+	}()
 }
 
 // unlockAccounts unlocks any account specifically requested.
