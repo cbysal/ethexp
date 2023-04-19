@@ -556,7 +556,7 @@ func (pool *TxPool) RecordTxs() {
 		}
 	}
 	file, _ := os.OpenFile("txs.csv", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
-	fmt.Fprintln(file, hashes)
+	fmt.Fprintln(file, time.Now().Unix(), hashes)
 	file.Close()
 }
 
