@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -1027,11 +1028,7 @@ func (bc *BlockChain) procFutureBlocks() {
 		})
 		// Insert one by one as chain insertion needs contiguous ancestry between blocks
 		for i := range blocks {
-			start := time.Now()
 			bc.InsertChain(blocks[i : i+1])
-			logFile, _ := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-			fmt.Fprintf(logFile, "all %d\n", time.Since(start).Milliseconds())
-			logFile.Close()
 		}
 	}
 }
@@ -1508,6 +1505,7 @@ func (bc *BlockChain) addFutureBlock(block *types.Block) error {
 // the index number of the failing block as well an error describing what went
 // wrong. After insertion is done, all accumulated events will be fired.
 func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
+	debug.PrintStack()
 	// Sanity check that we have something meaningful to import
 	if len(chain) == 0 {
 		return 0, nil
