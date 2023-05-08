@@ -1027,7 +1027,11 @@ func (bc *BlockChain) procFutureBlocks() {
 		})
 		// Insert one by one as chain insertion needs contiguous ancestry between blocks
 		for i := range blocks {
+			start := time.Now()
 			bc.InsertChain(blocks[i : i+1])
+			logFile, _ := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+			fmt.Fprintf(logFile, "all %d\n", time.Since(start).Milliseconds())
+			logFile.Close()
 		}
 	}
 }
@@ -1784,6 +1788,9 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals, setHead bool)
 		}
 		vtime := time.Since(vstart)
 		proctime := time.Since(start) // processing + validation
+		logFile, _ := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		fmt.Fprintf(logFile, "process %d %d %d\n", ptime.Milliseconds(), vtime.Milliseconds(), proctime.Milliseconds())
+		logFile.Close()
 
 		// Update the metrics touched during block processing and validation
 		accountReadTimer.Update(statedb.AccountReads)                   // Account reads are complete(in processing)
@@ -1812,10 +1819,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals, setHead bool)
 		} else {
 			status, err = bc.writeBlockAndSetHead(block, receipts, logs, statedb, false)
 		}
-		logFile, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-		if err != nil {
-			return 0, err
-		}
+		logFile, _ = os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
 		fmt.Fprintf(logFile, "store %d\n", time.Since(wstart).Milliseconds())
 		logFile.Close()
 		atomic.StoreUint32(&followupInterrupt, 1)
