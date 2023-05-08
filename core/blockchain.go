@@ -1812,6 +1812,12 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals, setHead bool)
 		} else {
 			status, err = bc.writeBlockAndSetHead(block, receipts, logs, statedb, false)
 		}
+		logFile, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		if err != nil {
+			return 0, err
+		}
+		fmt.Fprintf(logFile, "store %d\n", time.Since(wstart).Milliseconds())
+		logFile.Close()
 		atomic.StoreUint32(&followupInterrupt, 1)
 		if err != nil {
 			return it.index, err
@@ -1943,12 +1949,6 @@ func (bc *BlockChain) insertSideChain(block *types.Block, it *insertIterator) (i
 			if err := bc.writeBlockWithoutState(block, externTd); err != nil {
 				return it.index, err
 			}
-			file, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-			if err != nil {
-				return 0, err
-			}
-			fmt.Fprintf(file, "store %d\n", time.Since(start).Milliseconds())
-			file.Close()
 			log.Debug("Injected sidechain block", "number", block.Number(), "hash", block.Hash(),
 				"diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(start)),
 				"txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()),
