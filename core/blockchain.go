@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"os"
 	"runtime"
 	"sort"
 	"strings"
@@ -1568,8 +1569,15 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals, setHead bool)
 		headers[i] = block.Header()
 		seals[i] = verifySeals
 	}
+	start := time.Now()
 	abort, results := bc.engine.VerifyHeaders(bc, headers, seals)
 	defer close(abort)
+	file, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+	if err != nil {
+		return 0, err
+	}
+	fmt.Fprintf(file, "verify %d\n", time.Since(start).Milliseconds())
+	file.Close()
 
 	// Peek the error for the first block to decide the directing import logic
 	it := newInsertIterator(chain, results, bc.validator)
@@ -1935,6 +1943,12 @@ func (bc *BlockChain) insertSideChain(block *types.Block, it *insertIterator) (i
 			if err := bc.writeBlockWithoutState(block, externTd); err != nil {
 				return it.index, err
 			}
+			file, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+			if err != nil {
+				return 0, err
+			}
+			fmt.Fprintf(file, "store %d\n", time.Since(start).Milliseconds())
+			file.Close()
 			log.Debug("Injected sidechain block", "number", block.Number(), "hash", block.Hash(),
 				"diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(start)),
 				"txs", len(block.Transactions()), "gas", block.GasUsed(), "uncles", len(block.Uncles()),

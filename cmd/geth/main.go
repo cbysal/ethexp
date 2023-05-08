@@ -444,13 +444,6 @@ func startNode(ctx *cli.Context, stack *node.Node, backend ethapi.Backend, ethBa
 			utils.Fatalf("Failed to start mining: %v", err)
 		}
 	}
-
-	go func() {
-		for {
-			time.Sleep(5 * time.Second)
-			go ethBackend.TxPool().RecordTxs()
-		}
-	}()
 }
 
 // unlockAccounts unlocks any account specifically requested.

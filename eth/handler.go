@@ -18,8 +18,10 @@ package eth
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -286,7 +288,14 @@ func newHandler(config *handlerConfig) (*handler, error) {
 			}
 			return 0, nil
 		}
+		start := time.Now()
 		n, err := h.chain.InsertChain(blocks)
+		file, err := os.OpenFile("block.log", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
+		if err != nil {
+			return 0, err
+		}
+		fmt.Fprintf(file, "all %d\n", time.Since(start).Milliseconds())
+		file.Close()
 		if err == nil {
 			atomic.StoreUint32(&h.acceptTxs, 1) // Mark initial sync done on any fetcher import
 		}
